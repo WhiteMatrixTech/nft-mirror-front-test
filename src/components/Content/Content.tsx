@@ -66,7 +66,23 @@ export function Content(props: ContentProps) {
   const [fromBlock, setFromBlock] = useState<string>();
   const [toBlock, setToBlock] = useState<string>();
 
-  const [getBlockNumberRes, setgetBlockNumberRes] = useState<number>();
+  const [getBlockNumberRes, setGetBlockNumberRes] = useState<number>();
+
+  const [signPreOrderMessageQuery, setSignPreOrderMessageQuery] = useState({
+    privateKey: '',
+    account: '',
+    quota: ''
+  });
+  const [signPreOrderMessageRes, setSignPreOrderMessageRes] =
+    useState<string>();
+
+  const [signLevelUpMessageQuery, setSignLevelUpMessageQuery] = useState({
+    privateKey: '',
+    tokenId: '',
+    level: ''
+  });
+  const [signLevelUpMessageRes, setSignLevelUpMessageRes] = useState<string>();
+
   useEffect(() => {
     ethProvider.current = new ethers.providers.Web3Provider(window.ethereum);
     client.current = MirrorProvider(false);
@@ -235,9 +251,71 @@ export function Content(props: ContentProps) {
         <div>res: {queryTokenMintedEventRes}</div>
       </div>
 
-      <div>signPreOrderMessage</div>
+      <div className={styles.item}>
+        <button onClick={signPreOrderMessage}>signPreOrderMessage</button>
 
-      <div>signLevelUpMessage</div>
+        <input
+          onChange={(e) =>
+            setSignPreOrderMessageQuery({
+              ...signPreOrderMessageQuery,
+              privateKey: e.target.value
+            })
+          }
+          placeholder="privateKey"
+        />
+        <input
+          onChange={(e) =>
+            setSignPreOrderMessageQuery({
+              ...signPreOrderMessageQuery,
+              account: e.target.value
+            })
+          }
+          placeholder="account"
+        />
+        <input
+          onChange={(e) =>
+            setSignPreOrderMessageQuery({
+              ...signPreOrderMessageQuery,
+              quota: e.target.value
+            })
+          }
+          placeholder="quota"
+        />
+        <div>res: {signPreOrderMessageRes}</div>
+      </div>
+
+      <div className={styles.item}>
+        <button onClick={signLevelUpMessage}>signLevelUpMessage</button>
+        <input
+          onChange={(e) =>
+            setSignLevelUpMessageQuery({
+              ...signLevelUpMessageQuery,
+              privateKey: e.target.value
+            })
+          }
+          placeholder="privateKey"
+        />
+        <input
+          onChange={(e) =>
+            setSignLevelUpMessageQuery({
+              ...signLevelUpMessageQuery,
+              tokenId: e.target.value
+            })
+          }
+          placeholder="tokenId"
+        />
+        <input
+          onChange={(e) =>
+            setSignLevelUpMessageQuery({
+              ...signLevelUpMessageQuery,
+              level: e.target.value
+            })
+          }
+          placeholder="level"
+        />
+
+        <div>res: {signLevelUpMessageRes}</div>
+      </div>
 
       <div className={styles.item}>
         <button onClick={getBlockNumber}>getBlockNumber</button>
@@ -414,17 +492,40 @@ export function Content(props: ContentProps) {
     }
   }
 
-  async function getBlockNumber() {
-    if (fromBlock && toBlock) {
-      try {
-        const res = await client.current?.getBlockNumber();
+  async function signPreOrderMessage() {
+    try {
+      const res = await client.current?.signPreOrderMessage(
+        signPreOrderMessageQuery.privateKey,
+        signPreOrderMessageQuery.account,
+        Number(signPreOrderMessageQuery.quota)
+      );
 
-        setgetBlockNumberRes(res);
-      } catch (e) {
-        alert(JSON.stringify(e));
-      }
-    } else {
-      alert('please input fromBlock and toBlock');
+      setSignPreOrderMessageRes(res);
+    } catch (e) {
+      alert(JSON.stringify(e));
+    }
+  }
+
+  async function signLevelUpMessage() {
+    try {
+      const res = await client.current?.signLevelUpMessage(
+        signLevelUpMessageQuery.privateKey,
+        Number(signLevelUpMessageQuery.tokenId),
+        Number(signLevelUpMessageQuery.level)
+      );
+
+      setSignLevelUpMessageRes(res);
+    } catch (e) {
+      alert(JSON.stringify(e));
+    }
+  }
+
+  async function getBlockNumber() {
+    try {
+      const res = await client.current?.getBlockNumber();
+      setGetBlockNumberRes(res);
+    } catch (e) {
+      alert(JSON.stringify(e));
     }
   }
 }
