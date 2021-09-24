@@ -10,7 +10,7 @@
   "dependencies": {
     "@ethersproject/providers": "^5.4.5",
     "@metamask/detect-provider": "^1.2.0",
-    "@white-matrix/nft-mirror-sdk": "0.1.2",
+    "@white-matrix/nft-mirror-sdk": "0.1.2-a",
     "axios": "0.21.4",
     "classnames": "2.3.1",
     "ethers": "^5.4.7",
