@@ -84,15 +84,7 @@ export function Content(props: ContentProps) {
   const [signLevelUpMessageRes, setSignLevelUpMessageRes] = useState<string>();
 
   useEffect(() => {
-    ethProvider.current = new ethers.providers.Web3Provider(window.ethereum);
-    client.current = MirrorProvider(false);
-
-    client.current.connectProvider(CONTRACT_ADDRESS, ethProvider.current);
-
-    const signer = ethProvider.current.getSigner();
-    client.current.connectSigner(signer);
-
-    client.current.setWaitConfirmations(1);
+    void initProvider();
   }, []);
 
   return (
@@ -323,6 +315,18 @@ export function Content(props: ContentProps) {
       </div>
     </div>
   );
+
+  async function initProvider() {
+    ethProvider.current = new ethers.providers.Web3Provider(window.ethereum);
+    client.current = MirrorProvider(false);
+
+    await client.current.connectProvider(CONTRACT_ADDRESS, ethProvider.current);
+
+    const signer = ethProvider.current.getSigner();
+    client.current.connectSigner(signer);
+
+    client.current.setWaitConfirmations(1);
+  }
 
   async function getStockSupply() {
     try {
