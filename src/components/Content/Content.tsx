@@ -1,13 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import React, { useEffect, useRef, useState } from 'react';
 import cn from 'classnames';
 import { BigNumber, ethers } from 'ethers';
 import {
   MirrorClient,
   MirrorProvider,
-  DeploymentInfo
+  DeploymentInfo,
+  Mirror__factory
 } from '@white-matrix/nft-mirror-sdk';
 
 import styles from './Content.module.less';
+import {
+  MirrorImpl,
+  MirrorImpl__factory
+} from '@white-matrix/nft-mirror-sdk/dist/contracts/typechain';
 interface ContentProps {
   className?: string;
 }
@@ -18,6 +26,7 @@ export function Content(props: ContentProps) {
   const { className } = props;
   const ethProvider = useRef<ethers.providers.Web3Provider>();
   const client = useRef<MirrorClient>();
+  const mirrorImpl = useRef<MirrorImpl>();
 
   const [stockSupplyRes, setStockSupplyRes] = useState<string>();
   const [tokenPriceRes, setTokenPriceRes] = useState<string>();
@@ -82,13 +91,181 @@ export function Content(props: ContentProps) {
     level: ''
   });
   const [signLevelUpMessageRes, setSignLevelUpMessageRes] = useState<string>();
+  const [adminConnected, setAdminConnected] = useState<boolean>();
+
+  const [paused, setPaused] = useState<boolean>();
+  const [stageLock, setStageLock] = useState<boolean>();
+  const [stageLockInput, setStageLockInput] = useState<string>();
+  const [airDropList, setAirDropList] = useState<string>('[]');
+  const [roleAddress, setRoleAddress] = useState<string>('');
+  const [isAdmin, setIsAdmin] = useState<boolean>();
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('0');
 
   useEffect(() => {
     void initProvider();
   }, []);
 
+  const [contractAddress, setContractAddress] =
+    useState<string>(CONTRACT_ADDRESS);
+
+  const refreshAdminView = async () => {
+    console.log(isAdmin);
+    if (mirrorImpl.current) {
+      setPaused(await mirrorImpl.current.paused());
+      setStageLock(await mirrorImpl.current.stageLock());
+      const currentAddress = await ethProvider.current
+        ?.getSigner()
+        .getAddress();
+      if (currentAddress) {
+        setIsAdmin(
+          await mirrorImpl.current.hasRole(
+            ethers.constants.HashZero,
+            currentAddress
+          )
+        );
+      }
+    }
+  };
+
+  const connectAdminProvider = () => {
+    if (ethProvider.current) {
+      mirrorImpl.current = MirrorImpl__factory.connect(
+        contractAddress,
+        ethProvider.current.getSigner()
+      );
+      setAdminConnected(true);
+      void refreshAdminView();
+    }
+  };
+
+  const unpause = async () => {
+    await mirrorImpl.current?.unpause();
+  };
+
+  const pause = async () => {
+    await mirrorImpl.current?.pause();
+  };
+
+  const setContractStageLock = async (lock: boolean) => {
+    await mirrorImpl.current?.setStageLock(lock);
+  };
+
+  const grantAdmin = async (account: string) => {
+    await mirrorImpl.current?.grantRole(ethers.constants.HashZero, account);
+  };
+
+  const withdraw = async (amount: string) => {
+    await mirrorImpl.current?.withdraw(ethers.utils.parseUnits(amount, 'wei'));
+  };
+
+  const airDrop = async (jsonList: string) => {
+    if (mirrorImpl.current) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const addressRecords = JSON.parse(jsonList);
+      const addresses = [];
+      const quantities = [];
+      for (const idx in addressRecords) {
+        addresses.push(addressRecords[idx].Wallet);
+        quantities.push(parseInt(addressRecords[idx].Quantity));
+      }
+      const totalNumberOfToken = quantities.reduce((prev, next) => prev + next);
+      window.alert(
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        `addressLength: ${addressRecords.length}, totalNumberOfToken: ${totalNumberOfToken}`
+      );
+      const gasLimit = await mirrorImpl.current.estimateGas.batchAirdrop(
+        addresses,
+        quantities
+      );
+      console.log(gasLimit.toString());
+      const ret = await (
+        await mirrorImpl.current?.batchAirdrop(addresses, quantities, {
+          gasLimit: gasLimit.mul(13).div(10)
+        })
+      ).wait();
+      const addressTokenIdMap: { [key: string]: number[] } = {};
+      if (ret.events) {
+        ret.events.forEach((event: any) => {
+          const address = event.args.payer ? event.args.payer : event.args[0];
+          if (event.args && event.event === 'TokenMinted') {
+            if (!addressTokenIdMap[address]) {
+              addressTokenIdMap[address] = [];
+            }
+            addressTokenIdMap[address].push(
+              event.args.tokenId
+                ? event.args.tokenId.toNumber()
+                : event.args[1].toNumber()
+            );
+          }
+        });
+      }
+
+      console.log(addressTokenIdMap);
+      window.alert(JSON.stringify(addressTokenIdMap));
+    }
+  };
+
   return (
     <div className={cn(styles.Content, className)}>
+      <h2>Admin Actions</h2>
+      <div className={styles.item}>
+        <button onClick={connectAdminProvider}>Connect Admin Provider</button>
+        <input
+          onChange={(e) => setContractAddress(e.target.value)}
+          placeholder="contract address"
+        />
+      </div>
+      <div className={styles.item}>
+        <button onClick={() => refreshAdminView()}>Refresh status</button>
+        <div>Current contract address: {contractAddress} </div>
+        <div>Current account isAdmin: {isAdmin ? 'true' : 'false'}</div>
+        <div>AdminProvider connected: {adminConnected ? 'true' : 'false'} </div>
+        <div>StageLock: {stageLock ? 'true' : 'false'}</div>
+        <div>Paused: {paused ? 'true' : 'false'}</div>
+      </div>
+      <div className={styles.item}>
+        {' '}
+        <button onClick={() => setContractStageLock(stageLockInput === 'true')}>
+          SetContractStageLock
+        </button>
+        <input
+          onChange={(e) => setStageLockInput(e.target.value)}
+          placeholder="true or false"
+        />
+      </div>
+      <div className={styles.item}>
+        {' '}
+        <button onClick={() => airDrop(airDropList)}>airDrop</button>
+        <input
+          onChange={(e) => setAirDropList(e.target.value)}
+          placeholder="json string"
+        />
+      </div>
+      <div className={styles.item}>
+        <button onClick={() => pause()}>PauseContract</button>
+      </div>
+      <div className={styles.item}>
+        <button onClick={() => unpause()}>UnpauseContract</button>
+      </div>
+      <div className={styles.item}>
+        {' '}
+        <button onClick={() => grantAdmin(roleAddress)}>grantAdmin</button>
+        <input
+          onChange={(e) => setRoleAddress(e.target.value)}
+          placeholder="account address"
+        />
+      </div>
+      <div className={styles.item}>
+        {' '}
+        <button onClick={() => withdraw(withdrawAmount)}>Withdraw</button>
+        <input
+          onChange={(e) => setWithdrawAmount(e.target.value)}
+          placeholder="amount in wei"
+        />
+      </div>
+
+      <hr />
+      <h2>SDK Demo</h2>
       <div className={styles.item}>
         <button onClick={getStockSupply}>get stockSupply</button>
         <div>res: {stockSupplyRes}</div>
@@ -100,6 +277,7 @@ export function Content(props: ContentProps) {
       </div>
 
       <div className={styles.item}>
+        {' '}
         <button onClick={() => getTokenInfoRes(tokenId)}>get tokenInfo</button>
         <input
           onChange={(e) => setTokenId(e.target.value)}
