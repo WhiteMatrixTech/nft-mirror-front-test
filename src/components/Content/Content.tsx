@@ -227,7 +227,7 @@ export function Content(props: ContentProps) {
       <div className={styles.item}>
         <button onClick={() => refreshAdminView()}>Refresh status</button>
         <p>Refresh it to check latest status</p>
-        <div>Current contract address: {contractAddress} </div>
+        <div>Current contract address: {mirrorImpl.current?.address} </div>
         <div>Current account isAdmin: {isAdmin ? 'true' : 'false'}</div>
         <div>AdminProvider connected: {adminConnected ? 'true' : 'false'} </div>
         <div>StageLock: {stageLock ? 'true' : 'false'}</div>
