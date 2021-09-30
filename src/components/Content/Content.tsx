@@ -209,14 +209,24 @@ export function Content(props: ContentProps) {
     <div className={cn(styles.Content, className)}>
       <h2>Admin Actions</h2>
       <div className={styles.item}>
-        <button onClick={connectAdminProvider}>Connect Admin Provider</button>
+        <p>
+          Connect to contract with address first, double check your current
+          network
+        </p>
+      </div>
+      <div className={styles.item}>
+        <button onClick={connectAdminProvider}>Connect to contract</button>
         <input
           onChange={(e) => setContractAddress(e.target.value)}
           placeholder="contract address"
         />
+        <div>Latest DeploymentInfo:</div>
+        <div>mainnet {DeploymentInfo.mainnet.mirror.proxyAddress}</div>
+        <div>rinkeby {DeploymentInfo.rinkeby.mirror.proxyAddress}</div>
       </div>
       <div className={styles.item}>
         <button onClick={() => refreshAdminView()}>Refresh status</button>
+        <p>Refresh it to check latest status</p>
         <div>Current contract address: {contractAddress} </div>
         <div>Current account isAdmin: {isAdmin ? 'true' : 'false'}</div>
         <div>AdminProvider connected: {adminConnected ? 'true' : 'false'} </div>
@@ -232,6 +242,8 @@ export function Content(props: ContentProps) {
           onChange={(e) => setStageLockInput(e.target.value)}
           placeholder="true or false"
         />
+        <p>false: preOrder-enabled, buy-disabled</p>
+        <p>true: preOrder-disabled, buy-enabled</p>
       </div>
       <div className={styles.item}>
         {' '}
@@ -240,9 +252,11 @@ export function Content(props: ContentProps) {
           onChange={(e) => setAirDropList(e.target.value)}
           placeholder="json string"
         />
+        <p>Copy the json file content to above form</p>
       </div>
       <div className={styles.item}>
         <button onClick={() => pause()}>PauseContract</button>
+        <p>buy, levelUp disabled</p>
       </div>
       <div className={styles.item}>
         <button onClick={() => unpause()}>UnpauseContract</button>
@@ -254,6 +268,7 @@ export function Content(props: ContentProps) {
           onChange={(e) => setRoleAddress(e.target.value)}
           placeholder="account address"
         />
+        <p>give account admin role !!!</p>
       </div>
       <div className={styles.item}>
         {' '}
@@ -262,6 +277,9 @@ export function Content(props: ContentProps) {
           onChange={(e) => setWithdrawAmount(e.target.value)}
           placeholder="amount in wei"
         />
+        <p>
+          Withdraw will divide amount to each share account according to the %
+        </p>
       </div>
 
       <hr />
